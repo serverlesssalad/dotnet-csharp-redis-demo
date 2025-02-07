@@ -1,44 +1,3 @@
-// var builder = WebApplication.CreateBuilder(args);
-
-// // Add services to the container.
-// // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-// builder.Services.AddOpenApi();
-
-// var app = builder.Build();
-
-// // Configure the HTTP request pipeline.
-// if (app.Environment.IsDevelopment())
-// {
-//     app.MapOpenApi();
-// }
-
-// app.UseHttpsRedirection();
-
-// var summaries = new[]
-// {
-//     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-// };
-
-// app.MapGet("/weatherforecast", () =>
-// {
-//     var forecast =  Enumerable.Range(1, 5).Select(index =>
-//         new WeatherForecast
-//         (
-//             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-//             Random.Shared.Next(-20, 55),
-//             summaries[Random.Shared.Next(summaries.Length)]
-//         ))
-//         .ToArray();
-//     return forecast;
-// })
-// .WithName("GetWeatherForecast");
-
-// app.Run();
-
-// record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-// {
-//     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-// }
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,7 +9,13 @@ using DotNetEnv;
 
 Env.Load(); // Loads .env file if present
 
-var builder = WebApplication.CreateBuilder(args);
+// Set the options with the desired content root path
+var options = new WebApplicationOptions
+{
+    ContentRootPath = "/"
+};
+
+var builder = WebApplication.CreateBuilder(options);
 
 // Load Redis configuration
 var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
@@ -58,7 +23,7 @@ var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
 var redisUsername = Environment.GetEnvironmentVariable("REDIS_USERNAME") ?? "default";
 var redisPassword = Environment.GetEnvironmentVariable("REDIS_PASSWORD") ?? "";
 
-var redisConnectionString = $"{redisHost}:{redisPort},username={redisUsername},password={redisPassword},ssl=False";
+var redisConnectionString = $"{redisHost}:{redisPort},password={redisPassword},ssl=False";
 
 Console.WriteLine($"Connecting to Redis at {redisHost}:{redisPort}");
 
@@ -77,7 +42,28 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+// Map the /health endpoint
+app.MapGet("/health", () =>
+{
+    try
+    {
+        var redisConnection = app.Services.GetRequiredService<IConnectionMultiplexer>();
+        if (redisConnection.IsConnected)
+        {
+            return Results.Ok(new { status = "healthy" });
+        }
+        return Results.Json(new { status = "unhealthy", message = "Unable to connect to Redis" }, statusCode: 500);
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { status = "unhealthy", message = ex.Message }, statusCode: 500);
+    }
+});
+
+// Map the root ("/") endpoint
+app.MapGet("/", () => Results.Ok("Welcome to the application!"));
+
+// app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();

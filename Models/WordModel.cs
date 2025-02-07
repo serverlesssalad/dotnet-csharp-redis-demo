@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 public class WordModel
 {
     [Required]
-    public string Word { get; set; }
+    public string? Word { get; set; }
 }
 
 public class WordUpdateModel

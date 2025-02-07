@@ -84,30 +84,4 @@ public class WordsController : ControllerBase
         return NoContent();
     }
 
-    // GET: /hello
-    [HttpGet("hello")]
-    public async Task<ActionResult<WordModel>> GetHelloWorld()
-    {
-        var words = await Redis.SetMembersAsync("words");
-        var word = words.FirstOrDefault()?.ToString() ?? "None";
-        return Ok(new WordModel { Word = $"Hello {word}" });
-    }
-
-    // GET: /health
-    [HttpGet("health")]
-    public ActionResult HealthCheck()
-    {
-        try
-        {
-            if (_redisConnection.IsConnected)
-            {
-                return Ok(new { status = "healthy" });
-            }
-            return StatusCode(500, new { status = "unhealthy" });
-        }
-        catch
-        {
-            return StatusCode(500, new { status = "unhealthy" });
-        }
-    }
 }
