@@ -1,0 +1,6 @@
+@dotnet_csharp_redis_demo_HostAddress = http://localhost:5138
+
+GET {{dotnet_csharp_redis_demo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
